@@ -29,6 +29,7 @@ namespace WpfTestApp
         {
             InitializeComponent();
             DataContext = viewModel;
+
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -64,6 +65,11 @@ namespace WpfTestApp
 
 
             }
+        }
+
+        private void listView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            browser.Navigate(((UrlAnchorCounter)listView.SelectedItem).Url);
         }
     }
 }

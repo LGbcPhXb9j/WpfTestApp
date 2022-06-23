@@ -30,11 +30,7 @@ namespace WpfTestApp
             return this.AnchorCount.CompareTo(other.AnchorCount);
         }
     }
-    public class ProgressActuator
-    {
-        public int CurrentProgress { get; set; } = 0;
-    }
-    internal class ViewModel : INotifyPropertyChanged
+    internal class ViewModel
     {
         int _progress;
 
@@ -53,26 +49,21 @@ namespace WpfTestApp
             {
                 tasks.Add (CreateAnchorCounter(progress, cancellationToken, url));
             }
-            await Task.WhenAll(tasks);
+            try { await Task.WhenAll(tasks); }
+            catch { MessageBox.Show("Stopped"); }
+            if (UrlAnchorCounters.Count>0)
             UrlAnchorCounters.Max().Maximal=true;
         }
         public async Task CreateAnchorCounter(IProgress<int> progress, CancellationToken cancellationToken,string url) 
         {
             if(url!=string.Empty)
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 HttpClient httpClient = new HttpClient();
                 string data = await httpClient.GetStringAsync(url.Replace("\n", string.Empty).Replace(" ", string.Empty));
                 Regex regex = new("<a [^>]*href=(?:'(?<href>.*?)')|(?:\"(?<href>.*?)\")", RegexOptions.IgnoreCase);
                 UrlAnchorCounters.Add(new UrlAnchorCounter(url, regex.Matches(data).Count));
             }
             progress.Report(++_progress);
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged; 
-        private void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
