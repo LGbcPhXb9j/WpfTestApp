@@ -23,13 +23,14 @@ namespace WpfTestApp
     /// </summary>
     public partial class MainWindow : Window
     {
-        ViewModel viewModel=new();
-        CancellationTokenSource cancellationTokenSource = new();
+        private Progress<int> progress = new();
+        private CancellationTokenSource cancellationTokenSource = new();
+        private ViewModel viewModel;
         public MainWindow()
         {
             InitializeComponent();
+            viewModel = new(progress);
             DataContext = viewModel;
-
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -39,17 +40,20 @@ namespace WpfTestApp
 
         private void StopButton_Click(object sender, RoutedEventArgs e)
         {
-            cancellationTokenSource.Cancel();
+            cancellationTokenSource.CancelAfter(2000);
+            //cancellationTokenSource.Cancel();
         }
 
         private async void StartButton_Click(object sender, RoutedEventArgs e)
         {
+            cancellationTokenSource = new();
             progressBar.Value = 0;
-            Progress<int> progress = new();
-            progress.ProgressChanged += RefreshProgress;
-            await viewModel.CountAnchorsAsync(progress,cancellationTokenSource.Token);
+            progress.ProgressChanged += TrackProgress;
+            browser.Navigate("about:blank");
+            await viewModel.CountAnchorsAsync(cancellationTokenSource.Token);
+            progress.ProgressChanged -= TrackProgress;
         }
-        private void RefreshProgress(object sender, int e)
+        private void TrackProgress(object sender, int e)
         {
             progressBar.Value = e;
         }
@@ -60,7 +64,7 @@ namespace WpfTestApp
             openFileDialog.Filter = "Text files (*.txt)|*.txt";
             if (openFileDialog.ShowDialog() == true)
             {
-                viewModel.Urls= File.ReadAllText(openFileDialog.FileName).Split("\n");
+                viewModel.Urls = File.ReadAllText(openFileDialog.FileName).Split("\n");
                 progressBar.Maximum = viewModel.Urls.Length;
 
 
@@ -69,7 +73,12 @@ namespace WpfTestApp
 
         private void listView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            browser.Navigate(((UrlAnchorCounter)listView.SelectedItem).Url);
+            object listViewSelectedItem = listView.SelectedItem;
+            if (listViewSelectedItem != null)
+            {
+
+                browser.Navigate(((UrlAnchorCounter)listViewSelectedItem).Url);
+            }
         }
     }
 }
