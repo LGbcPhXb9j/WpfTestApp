@@ -26,7 +26,7 @@
             <ListView.Resources>
                 <Style TargetType="{x:Type ListViewItem}">
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding Maximal}"
+                        <DataTrigger Binding="{Binding IsMaximal}"
                       Value="true">
                             <Setter Property="Background"
                   Value="Red" />

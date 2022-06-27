@@ -14,11 +14,21 @@ using System.Windows;
 
 namespace WpfTestApp
 {
-    class UrlAnchorCounter : IComparable<UrlAnchorCounter>
+    class UrlAnchorCounter : IComparable<UrlAnchorCounter>, INotifyPropertyChanged
     {
+        private bool isMaximal;
+
         public string Url { get; }
         public int AnchorCount { get; }
-        public bool IsMaximal { get; set; }
+        public bool IsMaximal
+        {
+            get => isMaximal;
+            set
+            {
+                isMaximal = value;
+                OnPropertyChanged("IsMaximal");
+            }
+        }
         public UrlAnchorCounter(string url, int count)
         {
             Url = url;
@@ -28,6 +38,12 @@ namespace WpfTestApp
         public int CompareTo(UrlAnchorCounter other)
         {
             return this.AnchorCount.CompareTo(other.AnchorCount);
+        }
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void OnPropertyChanged([CallerMemberName] string prop = "")
+        {
+            if (PropertyChanged != null)
+                PropertyChanged(this, new PropertyChangedEventArgs(prop));
         }
     }
     internal class ViewModel
