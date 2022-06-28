@@ -49,7 +49,7 @@ namespace WpfTestApp
             cancellationTokenSource = new();
             progressBar.Value = 0;
             progress.ProgressChanged += TrackProgress;
-            browser.Navigate("about:blank");
+            browser.Source=new Uri("about:blank");
             await viewModel.CountAnchorsAsync(cancellationTokenSource.Token);
             progress.ProgressChanged -= TrackProgress;
         }
@@ -77,7 +77,7 @@ namespace WpfTestApp
             if (listViewSelectedItem != null)
             {
 
-                browser.Navigate(((UrlAnchorCounter)listViewSelectedItem).Url);
+                browser.Source=new Uri(((UrlAnchorCounter)listViewSelectedItem).Url);
             }
         }
     }

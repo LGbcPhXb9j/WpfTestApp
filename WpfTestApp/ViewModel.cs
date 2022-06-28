@@ -98,7 +98,7 @@ namespace WpfTestApp
                 try
                 {
                     string data = await _httpClient.GetStringAsync(url.Replace("\n", string.Empty).Replace(" ", string.Empty));
-                    Regex regex = new("<a [^>]*href=(?:'(?<href>.*?)')|(?:\"(?<href>.*?)\")", RegexOptions.IgnoreCase);
+                    Regex regex = new(@"href\s*=\s*(?:[""'](?<1>[^""']*)[""']|(?<1>[^>\s]+))", RegexOptions.IgnoreCase);
                     UrlAnchorCounters.Add(new UrlAnchorCounter(url, regex.Matches(data).Count));
                 }
                 catch (Exception e) { _message += e.Message + "\n" + url + "\n"; }
