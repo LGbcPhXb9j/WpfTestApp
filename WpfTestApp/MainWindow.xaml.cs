@@ -49,7 +49,6 @@ namespace WpfTestApp
             cancellationTokenSource = new();
             progressBar.Value = 0;
             progress.ProgressChanged += TrackProgress;
-            browser.Source=new Uri("about:blank");
             await viewModel.CountAnchorsAsync(cancellationTokenSource.Token);
             progress.ProgressChanged -= TrackProgress;
         }
@@ -73,12 +72,7 @@ namespace WpfTestApp
 
         private void listView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            object listViewSelectedItem = listView.SelectedItem;
-            if (listViewSelectedItem != null)
-            {
-
-                browser.Source=new Uri(((UrlAnchorCounter)listViewSelectedItem).Url);
-            }
+            browser.Reload();
         }
     }
 }

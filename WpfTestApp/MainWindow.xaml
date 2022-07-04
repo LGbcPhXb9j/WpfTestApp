@@ -23,7 +23,7 @@
             <RowDefinition Height="auto"/>
             <RowDefinition Height="5"/>
         </Grid.RowDefinitions>
-        <ListView x:Name="listView" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" ItemsSource="{Binding UrlAnchorCounters}" SelectionChanged="listView_SelectionChanged">
+        <ListView x:Name="listView" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" ItemsSource="{Binding UrlAnchorCounters}" SelectedItem="{Binding SelectedModel}">
             <ListView.Resources>
                 <Style TargetType="{x:Type ListViewItem}">
                     <Style.Triggers>
@@ -44,7 +44,7 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <wv2:WebView2 x:Name="browser" Grid.Column="4" Grid.Row="1" Grid.ColumnSpan="2"/>
+        <wv2:WebView2 x:Name="browser" Grid.Column="4" Grid.Row="1" Grid.ColumnSpan="2" Source="{Binding SelectedModel.Url}"/>
         <Button x:Name="OpenFileButton"  Grid.Column="1" Grid.Row="2" Content="Open" Margin="2" Click="OpenFileButton_Click"/>
         <Button x:Name="StartButton"  Grid.Column="2" Grid.Row="2" Content="Start" Margin="2" Click="StartButton_Click"/>
         <Button x:Name="StopButton"  Grid.Column="3" Grid.Row="2" Content="Stop" Margin="2" Click="StopButton_Click"/>
