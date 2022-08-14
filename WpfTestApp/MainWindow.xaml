@@ -6,7 +6,8 @@
         xmlns:local="clr-namespace:WpfTestApp"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         mc:Ignorable="d"
-        Title="Browser Test" Height="450" Width="800" FontFamily="Segoe UI Light">
+        Title="{Binding FileLocation}" Height="auto" Width="auto" FontFamily="Segoe UI Light"
+        SizeToContent="WidthAndHeight">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="5"/>
@@ -14,16 +15,18 @@
             <ColumnDefinition Width="auto"/>
             <ColumnDefinition Width="auto"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="auto"/>
             <ColumnDefinition Width="5"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="5"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="5"/>
         </Grid.RowDefinitions>
-        <ListView x:Name="listView" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" ItemsSource="{Binding UrlAnchorCounters}" SelectedItem="{Binding SelectedModel}">
+        <ListView x:Name="listView" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" 
+                  ItemsSource="{Binding UrlAnchorCounters}" SelectedItem="{Binding SelectedModel}" 
+                  MinHeight="300" MinWidth="300">
             <ListView.Resources>
                 <Style TargetType="{x:Type ListViewItem}">
                     <Style.Triggers>
@@ -38,17 +41,21 @@
             <ListView.View>
                 <GridView>
                     <GridView.Columns>
-                        <GridViewColumn Header="Url" DisplayMemberBinding="{Binding Url}"></GridViewColumn>
+                        <GridViewColumn Header="Url" DisplayMemberBinding="{Binding Url}" Width="200"></GridViewColumn>
                         <GridViewColumn Header="Hooks" DisplayMemberBinding="{Binding AnchorCount}"></GridViewColumn>
                     </GridView.Columns>
                 </GridView>
             </ListView.View>
         </ListView>
-        <wv2:WebView2 x:Name="browser" Grid.Column="4" Grid.Row="1" Grid.ColumnSpan="2" Source="{Binding SelectedModel.Url}"/>
-        <Button x:Name="OpenFileButton"  Grid.Column="1" Grid.Row="2" Content="Open" Margin="2" Click="OpenFileButton_Click"/>
-        <Button x:Name="StartButton"  Grid.Column="2" Grid.Row="2" Content="Start" Margin="2" Click="StartButton_Click"/>
-        <Button x:Name="StopButton"  Grid.Column="3" Grid.Row="2" Content="Stop" Margin="2" Click="StopButton_Click"/>
-        <Button x:Name="CloseButton"  Grid.Column="5" Grid.Row="2" Content="Close" Margin="2" Click="CloseButton_Click"/>
-        <ProgressBar x:Name="progressBar" Minimum="0"  Margin="5" Grid.Column="4" Grid.Row="2" />
+         <Expander Grid.Column="4" Grid.Row="1" ExpandDirection="Right"  > 
+            <wv2:WebView2 Grid.Column="4" Grid.Row="1" x:Name="browser" Height="600" Width="800" Source="{Binding SelectedModel.Url}" />
+         </Expander> 
+        <Button Grid.Column="1" Grid.Row="3" Content="Open" Margin="2" Command="{Binding GetFilePath}"/>
+        <Button Grid.Column="2" Grid.Row="3" Content="{Binding ButtonName}" Command="{Binding StartOrStop}" Margin="2"/>
+        <Button Grid.Column="3" Grid.Row="3" Content="Close" Margin="2" Command="{Binding Close}"
+                CommandParameter="{Binding RelativeSource={RelativeSource FindAncestor, 
+                           AncestorType={x:Type Window}}}"/>
+
+        <ProgressBar  Minimum="0" Maximum="100" Value="{Binding CurrentProgress}" Margin="5" Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="3" MinHeight="10"/>
     </Grid>
 </Window>

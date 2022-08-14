@@ -15,6 +15,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Microsoft.Web.WebView2.Core;
 
 namespace WpfTestApp
 {
@@ -23,56 +24,11 @@ namespace WpfTestApp
     /// </summary>
     public partial class MainWindow : Window
     {
-        private Progress<int> progress = new();
-        private CancellationTokenSource cancellationTokenSource = new();
-        private ViewModel viewModel;
         public MainWindow()
         {
             InitializeComponent();
-            viewModel = new(progress);
-            DataContext = viewModel;
+            DataContext = new ViewModel();
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            Close();
-        }
-
-        private void StopButton_Click(object sender, RoutedEventArgs e)
-        {
-            cancellationTokenSource.CancelAfter(2000);
-            //cancellationTokenSource.Cancel();
-        }
-
-        private async void StartButton_Click(object sender, RoutedEventArgs e)
-        {
-            cancellationTokenSource = new();
-            progressBar.Value = 0;
-            progress.ProgressChanged += TrackProgress;
-            await viewModel.CountAnchorsAsync(cancellationTokenSource.Token);
-            progress.ProgressChanged -= TrackProgress;
-        }
-        private void TrackProgress(object sender, int e)
-        {
-            progressBar.Value = e;
-        }
-        private void OpenFileButton_Click(object sender, RoutedEventArgs e)
-        {
-            string https = string.Empty;
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Text files (*.txt)|*.txt";
-            if (openFileDialog.ShowDialog() == true)
-            {
-                viewModel.Urls = File.ReadAllText(openFileDialog.FileName).Split("\n");
-                progressBar.Maximum = viewModel.Urls.Length;
-
-
-            }
-        }
-
-        private void listView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            browser.Reload();
-        }
     }
 }

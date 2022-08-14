@@ -1,141 +1,156 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
-using System.Drawing;
-using System.Text.RegularExpressions;
 using System.Collections.ObjectModel;
 using System.Windows;
 using HtmlAgilityPack;
 using System.IO;
+using Microsoft.Win32;
 
 namespace WpfTestApp
 {
-    class Model : IComparable<Model>, INotifyPropertyChanged
+    internal class ViewModel : INotifyPropertyChanged
     {
-        private bool isMaximal;
-
-        public Uri Url { get; }
-        public int AnchorCount { get; }
-
-        public bool IsMaximal
-        {
-            get => isMaximal;
-            set
-            {
-                isMaximal = value;
-                OnPropertyChanged("IsMaximal");
-            }
-        }
-        public Model(Uri url, int count)
-        {
-            Url = url;
-            OnPropertyChanged("Url");
-            AnchorCount = count;
-        }
-
-        public int CompareTo(Model other)
-        {
-            return this.AnchorCount.CompareTo(other.AnchorCount);
-        }
-        public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyChanged([CallerMemberName] string prop = "")
-        {
-            if (PropertyChanged != null)
-                PropertyChanged(this, new PropertyChangedEventArgs(prop));
-        }
-    }
-    internal class ViewModel: INotifyPropertyChanged
-    {
-        private int _currentCycle;
-        private HttpClient _httpClient = new HttpClient();
-        private IProgress<int> _progress;
+        private static HttpClient _httpClient = new HttpClient();
         private string _message = string.Empty;
         private Model _selectedModel, _maxUrlModel;
+        private Command _gerFilePath,_startOrStop,_close;
+        private bool _isRunning;
+        private CancellationTokenSource _cancellationTokenSource;
 
-        public string[] Urls { get; set; }
+        public string FileLocation { get; private set; } = "No file selected";
+        public string ButtonName => _isRunning ? "Stop" : "Start";
+
         public ObservableCollection<Model> UrlAnchorCounters { get; } = new ObservableCollection<Model>();
+        public int CurrentProgress { get; set; }
         public Model SelectedModel
         { 
             get => _selectedModel;
             set
             {
                 _selectedModel = value;
-                OnPropertyChanged("SelectedModel");
+                OnPropertyChangedAsync("SelectedModel");
+            }
+        }
+        
+        public Command GetFilePath
+        {
+            get
+            {
+                return _gerFilePath ??
+                    (_gerFilePath = new Command(obj =>
+                    {
+                        OpenFileDialog openFileDialog = new OpenFileDialog();
+                        openFileDialog.Filter = "Text files (*.txt)|*.txt";
+
+                        if (openFileDialog.ShowDialog() == true)
+                        {
+                            FileLocation = openFileDialog.FileName;
+                            OnPropertyChangedAsync("FileLocation");
+
+                        }
+
+                    },obj => !_isRunning));
+            }
+        }
+        public Command StartOrStop
+        {
+            get
+            {
+                return _startOrStop ??
+                    (_startOrStop = new Command(obj =>
+                    {
+                        try
+                        {
+                            CountAnchorsAsync();
+                        }
+                        catch (Exception e)
+                        {
+
+                           _message+=e.Message+"\n";
+                        }
+                    }, obj => FileLocation != "No file selected"));
+            }
+        }
+        public Command Close
+        {
+            get
+            {
+                return _close ??
+                    (_close = new Command(window => ((Window)window).Close()));
             }
         }
 
-
-        public ViewModel(IProgress<int> progress)
+        public async Task CountAnchorsAsync()
         {
-            _progress = progress;
-        }
-        public async Task CountAnchorsAsync(CancellationToken cancellationToken)
-        {
-            if (Urls == null)
-                throw new ArgumentNullException(nameof(Urls));
-            UrlAnchorCounters.Clear();
-            _message = string.Empty;
-            _progress.Report(_currentCycle = 0);
-            try
+            if (!_isRunning)
             {
-                foreach (string url in Urls)
+                _isRunning = true;
+                OnPropertyChangedAsync("ButtonName");
+                _maxUrlModel = null;
+                _cancellationTokenSource = new();
+                string[] urls = await File.ReadAllLinesAsync(FileLocation);
+                UrlAnchorCounters.Clear();
+                _message = string.Empty;
+                CurrentProgress = 0;
+                OnPropertyChangedAsync("CurrentProgress");
+                Task[] tasks = new Task[urls.Length];
+                
+                for (int i = 0; i < urls.Length; i++)
                 {
-                    await CreateAnchorCounterAsync(url);
-                    cancellationToken.ThrowIfCancellationRequested();
+                    tasks[i] = CreateAnchorCounter(urls[i]);
+                    CurrentProgress = ((i+1) * 100) / urls.Length;
+                    OnPropertyChangedAsync("CurrentProgress");
                 }
-
+                await Task.WhenAll(tasks);
             }
-            catch (OperationCanceledException e)
-            {
-
-                _message += e.Message + "\n";
-            }
-
-
+           else _cancellationTokenSource.Cancel();
+            _isRunning = false;
+            OnPropertyChangedAsync("ButtonName");
             if (_message != string.Empty)
-            {
                 MessageBox.Show(_message);
+            _cancellationTokenSource.Dispose();
 
-            }
+
         }
-        public async Task CreateAnchorCounterAsync(string url)
+        public async Task CreateAnchorCounter(string url)
         {
 
             if (url != string.Empty)
 
                 try
                 {
-                    Stream stream = await _httpClient.GetStreamAsync(url);
+                    //await Task.Run(()=>Thread.Sleep(5000));
+                    string site= await _httpClient.GetStringAsync(url,_cancellationTokenSource.Token);
                     HtmlDocument document = new();
-                    document.Load(stream);
-                    Model model = new Model(new Uri(url), document.DocumentNode.SelectNodes("//a[@href]").Count);
+                    document.LoadHtml(site);
+                    HtmlNodeCollection htmlNodeCollection = document.DocumentNode.SelectNodes("//a[@href]");
+                    int count= htmlNodeCollection==null?0:htmlNodeCollection.Count;
+                    Model model = new Model(new Uri(url), count);
 
-                    if (_maxUrlModel == null || _maxUrlModel.AnchorCount <model.AnchorCount)
-                    {
-                        if (_maxUrlModel != null)
+                        if (_maxUrlModel == null || _maxUrlModel.AnchorCount < model.AnchorCount)
                         {
-                            _maxUrlModel.IsMaximal = false;
+                            if (_maxUrlModel != null)
+                            {
+                                _maxUrlModel.IsMaximal = false;
+                            }
+                            model.IsMaximal = true;
+                            _maxUrlModel = model;
                         }
-                        model.IsMaximal=true;
-                        _maxUrlModel=model;
-                    }
 
-                    UrlAnchorCounters.Add(model);
-
+                        UrlAnchorCounters.Add(model);
+                    _cancellationTokenSource.Token.ThrowIfCancellationRequested();
                 }
                 catch (Exception e) { _message += e.Message + "\n" + url + "\n"; }
 
-            _progress.Report(++_currentCycle);
+
 
         }
         public event PropertyChangedEventHandler PropertyChanged;
-        public void OnPropertyChanged([CallerMemberName] string prop = "")
+        public async void OnPropertyChangedAsync([CallerMemberName] string prop = "")
         {
             if (PropertyChanged != null)
                 PropertyChanged(this, new PropertyChangedEventArgs(prop));
